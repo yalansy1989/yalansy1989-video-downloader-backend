@@ -1,18 +1,21 @@
-export default async function handler(req, res) {
+export default function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*'); // 👈 يسمح لكل المواقع بالوصول
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   const { url } = req.query;
 
   if (!url) {
-    return res.status(400).json({ error: 'يجب إرسال رابط الفيديو في المتغير url' });
+    return res.status(400).json({
+      success: false,
+      message: "يرجى إرسال رابط الفيديو"
+    });
   }
 
-  try {
-    return res.status(200).json({
-      success: true,
-      message: 'تم استقبال الرابط بنجاح 👌',
-      videoUrl: url
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'حدث خطأ أثناء معالجة الرابط' });
-  }
+  // هنا حاليًا مجرد رد تجريبي
+  res.status(200).json({
+    success: true,
+    message: "تم استقبال الرابط بنجاح",
+    downloadUrl: url // فقط عشان نتأكد إن الاتصال شغال
+  });
 }
