@@ -1,39 +1,42 @@
-import ytdl from "ytdl-core";
+// /api/youtube.js
 
 export default async function handler(req, res) {
-  // سماح بـ CORS إذا الواجهة أمامية منفصلة
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end(); // معاملة الطلب المسبق
-  }
-
   const { url } = req.query;
+
   if (!url) {
     return res.status(400).json({ success: false, message: "يرجى إرسال رابط الفيديو" });
   }
 
-  // تحقق إن الرابط صالح لي هذا الرابط يوتيوب
-  if (!ytdl.validateURL(url)) {
-    return res.status(400).json({ success: false, message: "رابط يوتيوب غير صالح" });
-  }
-
   try {
-    const info = await ytdl.getInfo(url);
-    // اختيار أفضل جودة فيديو + صوت
-    const format = ytdl.chooseFormat(info.formats, { quality: 'highest' });
-    if (!format || !format.url) {
-      return res.status(500).json({ success: false, message: "لم أتمكن من الحصول على رابط التحميل" });
-    }
-    return res.status(200).json({
-      success: true,
-      downloadUrl: format.url,
-      message: "تم تجهيز رابط التحميل بنجاح"
+    // ✅ استخدام خدمة Y2Mate Rapid API (تحتاج مفتاح API مجاني)
+    const rapidApiKey = process.env.RAPID_API_KEY; // ضع المفتاح في إعدادات Vercel
+    const response = await fetch(`https://youtube-mp36.p.rapidapi.com/dl?id=${encodeURIComponent(url)}`, {
+      method: 'GET',
+      headers: {
+        'X-RapidAPI-Host': 'youtube-mp36.p.rapidapi.com',
+        'X-RapidAPI-Key': rapidApiKey
+      }
     });
-  } catch (err) {
-    console.error("خطأ في ytdl:", err);
-    return res.status(500).json({ success: false, message: "حدث خطأ في السيرفر" });
+    const data = await response.json();
+
+    if (data && data.link) {
+      return res.status(200).json({
+        success: true,
+        message: "تم إنشاء رابط التحميل بنجاح ✅",
+        downloadUrl: data.link
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: "تعذر الحصول على رابط التحميل من YouTube"
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "حدث خطأ أثناء معالجة الطلب",
+      error: error.message
+    });
   }
 }
